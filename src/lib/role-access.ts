@@ -1,4 +1,4 @@
-import { UserPosition } from "@prisma/client";
+import { UserPosition, type UserPosition as UserPositionType } from "@/lib/user-position";
 
 export const ADMIN_ONLY_PATHS = [
   "/lead-permission",
@@ -29,7 +29,7 @@ export function isAdminOnlyApiPath(pathname: string): boolean {
 
 export function canAccessAppPath(
   pathname: string,
-  position: UserPosition,
+  position: UserPositionType,
 ): boolean {
   if (position === UserPosition.ADMIN) return true;
   if (isAdminOnlyPath(pathname)) return false;

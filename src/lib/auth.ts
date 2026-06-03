@@ -1,5 +1,5 @@
-import { UserPosition } from "@prisma/client";
 import { SignJWT, jwtVerify } from "jose";
+import { isUserPosition, type UserPosition as UserPositionType } from "@/lib/user-position";
 
 export const ADMIN_COOKIE = "admin_token";
 export const JWT_EXPIRY = "7d";
@@ -12,14 +12,11 @@ function getJwtSecret(): Uint8Array {
 export type AdminTokenPayload = {
   sub: string;
   email: string;
-  position: UserPosition;
+  position: UserPositionType;
 };
 
-function parsePosition(value: unknown): UserPosition | null {
-  if (value === UserPosition.ADMIN || value === UserPosition.MANAGER) {
-    return value;
-  }
-  return null;
+function parsePosition(value: unknown): UserPositionType | null {
+  return isUserPosition(value) ? value : null;
 }
 
 export async function signAdminToken(

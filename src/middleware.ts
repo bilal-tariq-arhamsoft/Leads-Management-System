@@ -1,5 +1,5 @@
-import { UserPosition } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { UserPosition } from "@/lib/user-position";
 import type { NextRequest } from "next/server";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/auth";
 import {
