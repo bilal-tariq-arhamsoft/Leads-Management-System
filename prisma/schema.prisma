@@ -39,8 +39,24 @@ model User {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   assignedLead    Lead?
+  history         History[]
 
   @@map("user")
+}
+
+model History {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  oldData   Json?
+  newData   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@map("history")
 }
 
 model LeadForm {

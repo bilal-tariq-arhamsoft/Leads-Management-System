@@ -1,12 +1,14 @@
 import { prisma } from "@/app/lib/prisma";
 import { requireAdminOnlyUser } from "@/lib/admin-session";
+import { HistoryAction, recordHistory } from "@/lib/history";
 
 export async function POST(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  let actor;
   try {
-    await requireAdminOnlyUser();
+    actor = await requireAdminOnlyUser();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (msg === "FORBIDDEN") {
@@ -22,7 +24,18 @@ export async function POST(
     return Response.json({ error: "Lead form not found" }, { status: 404 });
   }
 
-  await prisma.leadForm.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.leadForm.delete({ where: { id } });
+    await recordHistory(
+      {
+        userId: actor.id,
+        action: HistoryAction.LEAD_REJECTED,
+        oldData: leadForm,
+        newData: null,
+      },
+      tx,
+    );
+  });
 
   return Response.json({ ok: true });
 }

@@ -1,5 +1,7 @@
 import { prisma } from "@/app/lib/prisma";
 import { requireAdminOnlyUser } from "@/lib/admin-session";
+import { HistoryAction, recordHistory } from "@/lib/history";
+import { leadHistoryInclude } from "@/lib/history-select";
 
 type PatchBody = {
   isActive?: unknown;
@@ -15,8 +17,9 @@ export async function DELETE(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  let actor;
   try {
-    await requireAdminOnlyUser();
+    actor = await requireAdminOnlyUser();
   } catch (error) {
     if (error instanceof Error && error.message === "FORBIDDEN") {
       return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -32,13 +35,24 @@ export async function DELETE(
 
   const existingLead = await prisma.lead.findUnique({
     where: { id: leadId },
-    select: { id: true },
+    include: leadHistoryInclude,
   });
   if (!existingLead) {
     return Response.json({ error: "Lead not found" }, { status: 404 });
   }
 
-  await prisma.lead.delete({ where: { id: leadId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.lead.delete({ where: { id: leadId } });
+    await recordHistory(
+      {
+        userId: actor.id,
+        action: HistoryAction.LEAD_DELETED,
+        oldData: existingLead,
+        newData: null,
+      },
+      tx,
+    );
+  });
   return Response.json({ ok: true });
 }
 
@@ -46,8 +60,9 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  let actor;
   try {
-    await requireAdminOnlyUser();
+    actor = await requireAdminOnlyUser();
   } catch (error) {
     if (error instanceof Error && error.message === "FORBIDDEN") {
       return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -75,24 +90,40 @@ export async function PATCH(
 
   const existingLead = await prisma.lead.findUnique({
     where: { id: leadId },
-    select: { id: true },
+    include: leadHistoryInclude,
   });
   if (!existingLead) {
     return Response.json({ error: "Lead not found" }, { status: 404 });
   }
 
   try {
-    const updatedLead = await prisma.lead.update({
-      where: { id: leadId },
-      data: { isActive: nextIsActive },
-      select: {
-        id: true,
-        status: true,
-        isActive: true,
-        assignedUser: { select: { id: true, name: true } },
+    const updatedLead = await prisma.$transaction(async (tx) => {
+      const lead = await tx.lead.update({
+        where: { id: leadId },
+        data: { isActive: nextIsActive },
+        include: leadHistoryInclude,
+      });
+      await recordHistory(
+        {
+          userId: actor.id,
+          action: HistoryAction.LEAD_UPDATED,
+          oldData: existingLead,
+          newData: lead,
+        },
+        tx,
+      );
+      return lead;
+    });
+    return Response.json({
+      lead: {
+        id: updatedLead.id,
+        status: updatedLead.status,
+        isActive: updatedLead.isActive,
+        assignedUser: updatedLead.assignedUser
+          ? { id: updatedLead.assignedUser.id, name: updatedLead.assignedUser.name }
+          : null,
       },
     });
-    return Response.json({ lead: updatedLead });
   } catch {
     return Response.json({ error: "Could not update lead" }, { status: 400 });
   }

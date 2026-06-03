@@ -15,7 +15,7 @@ const globalForPrisma = global as unknown as {
 };
 
 /** Models this app uses — invalidate cached client if any are missing after `prisma generate`. */
-const REQUIRED_DELEGATES = ["user", "lead", "leadForm"] as const;
+const REQUIRED_DELEGATES = ["user", "lead", "leadForm", "history"] as const;
 
 function hasRequiredDelegates(client: PrismaClient): boolean {
   const record = client as unknown as Record<

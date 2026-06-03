@@ -1,6 +1,8 @@
 import { prisma } from "@/app/lib/prisma";
 import { validateManagerAssignment } from "@/lib/assignees";
 import { requireAdminOnlyUser } from "@/lib/admin-session";
+import { HistoryAction, recordHistory } from "@/lib/history";
+import { leadHistoryInclude } from "@/lib/history-select";
 
 type ApproveBody = {
   assignedUserId?: string;
@@ -11,8 +13,9 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  let actor;
   try {
-    await requireAdminOnlyUser();
+    actor = await requireAdminOnlyUser();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (msg === "FORBIDDEN") {
@@ -46,7 +49,7 @@ export async function POST(
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.lead.create({
+      const createdLead = await tx.lead.create({
         data: {
           firstName: leadForm.firstName,
           lastName: leadForm.lastName,
@@ -60,8 +63,18 @@ export async function POST(
           assignedUserId: assignment.userId,
           isActive,
         },
+        include: leadHistoryInclude,
       });
       await tx.leadForm.delete({ where: { id } });
+      await recordHistory(
+        {
+          userId: actor.id,
+          action: HistoryAction.LEAD_CREATED,
+          oldData: leadForm,
+          newData: createdLead,
+        },
+        tx,
+      );
     });
 
     return Response.json({ ok: true });

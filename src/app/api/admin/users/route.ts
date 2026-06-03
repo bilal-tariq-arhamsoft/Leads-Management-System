@@ -1,11 +1,15 @@
+import { UserPosition } from "@prisma/client";
 import { prisma } from "@/app/lib/prisma";
 import { hashPassword } from "@/lib/auth-password";
 import { requireAdminOnlyUser } from "@/lib/admin-session";
+import { HistoryAction, recordHistory } from "@/lib/history";
+import { userHistorySelect } from "@/lib/history-select";
 import { parseCreateUserBody } from "@/lib/user-create";
 
 export async function POST(request: Request) {
+  let actor;
   try {
-    await requireAdminOnlyUser();
+    actor = await requireAdminOnlyUser();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (msg === "FORBIDDEN") {
@@ -30,15 +34,24 @@ export async function POST(request: Request) {
 
   try {
     const passwordHash = await hashPassword(password);
-    const user = await prisma.user.create({
-      data: { name, email, passwordHash, position },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        position: true,
-        createdAt: true,
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: { name, email, passwordHash, position },
+        select: userHistorySelect,
+      });
+      await recordHistory(
+        {
+          userId: actor.id,
+          action:
+            position === UserPosition.ADMIN
+              ? HistoryAction.ADMIN_CREATED
+              : HistoryAction.MANAGER_CREATED,
+          oldData: null,
+          newData: created,
+        },
+        tx,
+      );
+      return created;
     });
 
     return Response.json({ ok: true, user }, { status: 201 });
