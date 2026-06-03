@@ -32,8 +32,7 @@ export default function LeadFormReviewTable({
   assigneeOptions,
 }: LeadFormReviewTableProps) {
   const router = useRouter();
-  const defaultAssigneeId =
-    assigneeOptions.find((o) => o.available)?.id ?? "";
+  const defaultAssigneeId = assigneeOptions[0]?.id ?? "";
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>(() => {
     const initial: Record<string, RowDraft> = {};
     for (const row of rows) {
@@ -57,14 +56,7 @@ export default function LeadFormReviewTable({
   async function handleApprove(id: string) {
     const draft = drafts[id];
     if (!draft?.assignedUserId) {
-      setError("Select an available manager before approving.");
-      return;
-    }
-    const selected = assigneeOptions.find(
-      (o) => o.id === draft.assignedUserId,
-    );
-    if (!selected?.available) {
-      setError("Selected manager is already assigned to another lead.");
+      setError("Select a manager before approving.");
       return;
     }
     setBusyId(id);
@@ -208,13 +200,8 @@ export default function LeadFormReviewTable({
                           Select manager
                         </option>
                         {assigneeOptions.map((manager) => (
-                          <option
-                            key={manager.id}
-                            value={manager.id}
-                            disabled={!manager.available}
-                          >
+                          <option key={manager.id} value={manager.id}>
                             {manager.name}
-                            {manager.available ? "" : " (assigned)"}
                           </option>
                         ))}
                       </select>

@@ -41,9 +41,8 @@ export default async function LeadPermissionPage() {
         Lead Permission
       </h1>
       <p className="mb-6 text-sm text-neutral-600">
-        Review pending submissions. Assign each lead to one manager (each
-        manager can only have one lead), set active status, then approve (✓)
-        or reject (✕).
+        Review pending submissions. Assign each lead to a manager, set whether it
+        is active, then approve (✓) or reject (✕).
       </p>
       <LeadFormReviewTable rows={rows} assigneeOptions={assigneeOptions} />
     </div>

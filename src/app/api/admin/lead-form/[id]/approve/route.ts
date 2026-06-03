@@ -82,14 +82,10 @@ export async function POST(
     if (
       error instanceof Error &&
       "code" in error &&
-      (error as { code: string }).code === "P2002"
+      (error as { code: string }).code === "P2002" &&
+      (error as { meta?: { target?: string[] } }).meta?.target?.includes("email")
     ) {
-      const target = (error as { meta?: { target?: string[] } }).meta?.target;
-      if (target?.includes("assignedUserId")) {
-        message = "This manager is already assigned to another lead";
-      } else if (target?.includes("email")) {
-        message = "A lead with this email already exists";
-      }
+      message = "A lead with this email already exists";
     }
     console.error("POST approve failed:", error);
     return Response.json({ error: message }, { status: 409 });

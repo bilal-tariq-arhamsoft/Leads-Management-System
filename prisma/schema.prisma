@@ -16,7 +16,7 @@ model Lead {
   position       String?
   source         LeadSource?
   message        String?
-  assignedUserId String?     @unique
+  assignedUserId String?
   isActive       Boolean     @default(true)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -24,6 +24,7 @@ model Lead {
 
   @@index([createdAt(sort: Desc)])
   @@index([source])
+  @@index([assignedUserId])
 }
 
 model User {
@@ -35,7 +36,7 @@ model User {
   position        UserPosition
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  assignedLead    Lead?
+  assignedLeads   Lead[]
   history         History[]
 
   @@map("user")
