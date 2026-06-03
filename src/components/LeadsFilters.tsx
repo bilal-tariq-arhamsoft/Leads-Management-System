@@ -4,6 +4,7 @@ import { LeadSource } from "@prisma/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import LeadDisplayCard from "@/components/DisplayCard";
 import LeadsPagination from "@/components/LeadsPagination";
+import type { ManagerAssigneeOption } from "@/lib/assignees";
 import {
   formatEnumLabel,
   LEADS_PER_PAGE,
@@ -18,6 +19,7 @@ type LeadsFiltersProps = {
   /** API path for fetching leads (admin panel uses authenticated route). */
   apiPath?: string;
   canManage?: boolean;
+  managerOptions?: ManagerAssigneeOption[];
 };
 
 type LeadsResponse = {
@@ -51,6 +53,7 @@ export default function LeadsFilters({
   initialTotal,
   apiPath = "/api/lead",
   canManage = false,
+  managerOptions = [],
 }: LeadsFiltersProps) {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -190,6 +193,7 @@ export default function LeadsFilters({
         pageSize={LEADS_PER_PAGE}
         emptyMessage={hasFilters ? "No leads match your filters" : "No leads yet"}
         canManage={canManage}
+        managerOptions={managerOptions}
         onChanged={triggerRefresh}
       />
 

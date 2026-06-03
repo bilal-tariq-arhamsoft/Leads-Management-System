@@ -1,10 +1,12 @@
 import { prisma } from "@/app/lib/prisma";
+import { validateManagerAssignment } from "@/lib/assignees";
 import { requireAdminOnlyUser } from "@/lib/admin-session";
 import { HistoryAction, recordHistory } from "@/lib/history";
 import { leadHistoryInclude } from "@/lib/history-select";
 
 type PatchBody = {
   isActive?: unknown;
+  assignedUserId?: unknown;
 };
 
 function normalizeIsActive(value: unknown): boolean | undefined {
@@ -84,8 +86,26 @@ export async function PATCH(
   const nextIsActive = normalizeIsActive(body.isActive);
   const hasIsActive = nextIsActive !== undefined;
 
-  if (!hasIsActive) {
-    return Response.json({ error: "Provide a valid active value to update" }, { status: 400 });
+  let assignedUserIdUpdate: string | null | undefined;
+  if ("assignedUserId" in body) {
+    if (body.assignedUserId === null || body.assignedUserId === "") {
+      assignedUserIdUpdate = null;
+    } else if (typeof body.assignedUserId === "string") {
+      const assignment = await validateManagerAssignment(body.assignedUserId);
+      if (!assignment.ok) {
+        return Response.json({ error: assignment.error }, { status: 400 });
+      }
+      assignedUserIdUpdate = assignment.userId;
+    } else {
+      return Response.json({ error: "Invalid manager assignment" }, { status: 400 });
+    }
+  }
+
+  if (!hasIsActive && assignedUserIdUpdate === undefined) {
+    return Response.json(
+      { error: "Provide active and/or manager assignment to update" },
+      { status: 400 },
+    );
   }
 
   const existingLead = await prisma.lead.findUnique({
@@ -100,7 +120,12 @@ export async function PATCH(
     const updatedLead = await prisma.$transaction(async (tx) => {
       const lead = await tx.lead.update({
         where: { id: leadId },
-        data: { isActive: nextIsActive },
+        data: {
+          ...(hasIsActive ? { isActive: nextIsActive } : {}),
+          ...(assignedUserIdUpdate !== undefined
+            ? { assignedUserId: assignedUserIdUpdate }
+            : {}),
+        },
         include: leadHistoryInclude,
       });
       await recordHistory(

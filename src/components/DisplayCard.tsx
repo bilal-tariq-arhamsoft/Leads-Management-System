@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ManagerAssigneeOption } from "@/lib/assignees";
 import {
   formatAssignedManager,
   type LeadListItem,
@@ -38,6 +39,7 @@ type DisplayCardProps = {
   pageSize: number;
   emptyMessage?: string;
   canManage?: boolean;
+  managerOptions?: ManagerAssigneeOption[];
   onChanged?: () => void;
 };
 
@@ -47,12 +49,15 @@ export default function LeadDisplayCard({
   pageSize,
   emptyMessage = "No leads yet",
   canManage = false,
+  managerOptions = [],
   onChanged,
 }: DisplayCardProps) {
   const [workingLeadId, setWorkingLeadId] = useState<string | null>(null);
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
   const [draftIsActive, setDraftIsActive] = useState(true);
+  const [draftAssignedUserId, setDraftAssignedUserId] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const canAssignManager = canManage && managerOptions.length > 0;
 
   const rowOffset = (page - 1) * pageSize;
   const colSpan = columns.length + 1 + (canManage ? 1 : 0);
@@ -61,6 +66,7 @@ export default function LeadDisplayCard({
     setError(null);
     setEditingLeadId(lead.id);
     setDraftIsActive(lead.isActive);
+    setDraftAssignedUserId(lead.assignedUser?.id ?? "");
   }
 
   function cancelEdit(): void {
@@ -98,6 +104,7 @@ export default function LeadDisplayCard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           isActive: draftIsActive,
+          ...(canAssignManager ? { assignedUserId: draftAssignedUserId } : {}),
         }),
       });
       if (!res.ok) {
@@ -170,24 +177,59 @@ export default function LeadDisplayCard({
                 </td>
                 {columns.map((col) => {
                   const text = formatCell(col.key, lead);
-                  if (col.key === "isActive" && canManage && editingLeadId === lead.id) {
-                    return (
-                      <td
-                        key={col.key}
-                        className={`overflow-hidden px-2 py-2 text-neutral-900 ${col.width}`}
-                      >
-                        <select
-                          value={draftIsActive ? "yes" : "no"}
-                          onChange={(e) => setDraftIsActive(e.target.value === "yes")}
-                          className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs"
-                          disabled={isBusy(lead.id)}
-                          aria-label="Active status"
+                  if (
+                    canManage &&
+                    editingLeadId === lead.id &&
+                    (col.key === "isActive" || col.key === "assignedUser")
+                  ) {
+                    if (col.key === "isActive") {
+                      return (
+                        <td
+                          key={col.key}
+                          className={`overflow-hidden px-2 py-2 text-neutral-900 ${col.width}`}
                         >
-                          <option value="yes">Yes</option>
-                          <option value="no">No</option>
-                        </select>
-                      </td>
-                    );
+                          <select
+                            value={draftIsActive ? "yes" : "no"}
+                            onChange={(e) =>
+                              setDraftIsActive(e.target.value === "yes")
+                            }
+                            className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs"
+                            disabled={isBusy(lead.id)}
+                            aria-label="Active status"
+                          >
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                        </td>
+                      );
+                    }
+                    if (col.key === "assignedUser" && canAssignManager) {
+                      return (
+                        <td
+                          key={col.key}
+                          className={`overflow-hidden px-2 py-2 text-neutral-900 ${col.width}`}
+                        >
+                          <select
+                            value={draftAssignedUserId}
+                            onChange={(e) =>
+                              setDraftAssignedUserId(e.target.value)
+                            }
+                            className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs"
+                            disabled={isBusy(lead.id)}
+                            aria-label="Assigned manager"
+                          >
+                            <option value="" disabled>
+                              Select manager
+                            </option>
+                            {managerOptions.map((manager) => (
+                              <option key={manager.id} value={manager.id}>
+                                {manager.name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                      );
+                    }
                   }
                   return (
                     <td

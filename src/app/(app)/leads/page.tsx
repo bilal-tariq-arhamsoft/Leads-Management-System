@@ -2,6 +2,7 @@ import { UserPosition } from "@prisma/client";
 import { prisma } from "@/app/lib/prisma";
 import LeadsFilters from "@/components/LeadsFilters";
 import { getAdminFromSession } from "@/lib/admin-session";
+import { getManagerAssigneeOptions } from "@/lib/assignees";
 import { buildLeadWhere, LEADS_PER_PAGE, leadListSelect } from "@/lib/lead-filters";
 import { managerAssignedUserIdFilter } from "@/lib/role-access";
 
@@ -12,7 +13,8 @@ export default async function LeadsPage() {
     isManager && user ? managerAssignedUserIdFilter(user.id) : undefined;
 
   const where = buildLeadWhere({ assignedUserId });
-  const [leads, total] = await Promise.all([
+  const isAdmin = user?.position === UserPosition.ADMIN;
+  const [leads, total, managerOptions] = await Promise.all([
     prisma.lead.findMany({
       where,
       take: LEADS_PER_PAGE,
@@ -20,6 +22,7 @@ export default async function LeadsPage() {
       select: leadListSelect,
     }),
     prisma.lead.count({ where }),
+    isAdmin ? getManagerAssigneeOptions() : Promise.resolve([]),
   ]);
 
   return (
@@ -34,7 +37,8 @@ export default async function LeadsPage() {
         initialLeads={leads}
         initialTotal={total}
         apiPath="/api/admin/leads"
-        canManage={user?.position === UserPosition.ADMIN}
+        canManage={isAdmin}
+        managerOptions={managerOptions}
       />
     </div>
   );
