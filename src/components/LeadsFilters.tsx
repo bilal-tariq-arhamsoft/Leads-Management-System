@@ -1,6 +1,6 @@
 "use client";
 
-import { LeadSource, LeadStatus } from "@prisma/client";
+import { LeadSource } from "@prisma/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import LeadDisplayCard from "@/components/DisplayCard";
 import LeadsPagination from "@/components/LeadsPagination";
@@ -32,14 +32,12 @@ function buildLeadsUrl(
   apiPath: string,
   search: string,
   source: string,
-  status: string,
   page: number,
 ): string {
   const params = new URLSearchParams();
   const trimmed = search.trim();
   if (trimmed) params.set("q", trimmed);
   if (source) params.set("source", source);
-  if (status) params.set("status", status);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `${apiPath}?${query}` : apiPath;
@@ -57,7 +55,6 @@ export default function LeadsFilters({
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [source, setSource] = useState("");
-  const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [leads, setLeads] = useState<LeadListItem[]>(initialLeads);
   const [total, setTotal] = useState(initialTotal);
@@ -75,21 +72,19 @@ export default function LeadsFilters({
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
-  const filtersRef = useRef({ debouncedSearch, source, status });
+  const filtersRef = useRef({ debouncedSearch, source });
   const pendingFilterReset = useRef(false);
 
   useEffect(() => {
     const prev = filtersRef.current;
     const filtersChanged =
-      prev.debouncedSearch !== debouncedSearch ||
-      prev.source !== source ||
-      prev.status !== status;
-    filtersRef.current = { debouncedSearch, source, status };
+      prev.debouncedSearch !== debouncedSearch || prev.source !== source;
+    filtersRef.current = { debouncedSearch, source };
     if (filtersChanged) {
       pendingFilterReset.current = true;
       setPage(1);
     }
-  }, [debouncedSearch, source, status]);
+  }, [debouncedSearch, source]);
 
   const fetchLeads = useCallback(
     async (signal: AbortSignal) => {
@@ -97,7 +92,7 @@ export default function LeadsFilters({
       setError(null);
       try {
         const res = await fetch(
-          buildLeadsUrl(apiPath, debouncedSearch, source, status, page),
+          buildLeadsUrl(apiPath, debouncedSearch, source, page),
           { signal, credentials: "same-origin" },
         );
         if (!res.ok) {
@@ -117,14 +112,13 @@ export default function LeadsFilters({
         if (!signal.aborted) setLoading(false);
       }
     },
-    [apiPath, debouncedSearch, source, status, page],
+    [apiPath, debouncedSearch, source, page],
   );
 
   const skipInitialFetch = useRef(true);
 
   useEffect(() => {
-    const hasFilters =
-      debouncedSearch.trim() !== "" || source !== "" || status !== "";
+    const hasFilters = debouncedSearch.trim() !== "" || source !== "";
 
     if (skipInitialFetch.current && !hasFilters && page === 1) {
       skipInitialFetch.current = false;
@@ -138,14 +132,13 @@ export default function LeadsFilters({
     const controller = new AbortController();
     fetchLeads(controller.signal);
     return () => controller.abort();
-  }, [fetchLeads, debouncedSearch, source, status, page, refreshKey]);
+  }, [fetchLeads, debouncedSearch, source, page, refreshKey]);
 
   const triggerRefresh = useCallback(() => {
     setRefreshKey((value) => value + 1);
   }, []);
 
-  const hasFilters =
-    debouncedSearch.trim() !== "" || source !== "" || status !== "";
+  const hasFilters = debouncedSearch.trim() !== "" || source !== "";
 
   return (
     <div className="space-y-4">
@@ -178,20 +171,6 @@ export default function LeadsFilters({
         >
           <option value="">All sources</option>
           {Object.values(LeadSource).map((value) => (
-            <option key={value} value={value}>
-              {formatEnumLabel(value)}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className={selectClassName}
-          aria-label="Filter by status"
-        >
-          <option value="">All statuses</option>
-          {Object.values(LeadStatus).map((value) => (
             <option key={value} value={value}>
               {formatEnumLabel(value)}
             </option>

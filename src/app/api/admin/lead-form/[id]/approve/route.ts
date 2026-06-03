@@ -58,7 +58,6 @@ export async function POST(
           company: leadForm.company,
           position: leadForm.position,
           source: leadForm.source,
-          status: leadForm.status,
           message: leadForm.message,
           assignedUserId: assignment.userId,
           isActive,

@@ -26,7 +26,6 @@ export async function POST(request: Request) {
         company: data.company,
         position: data.position,
         source: data.source,
-        status: data.status,
         message: data.message,
       },
       select: { id: true },

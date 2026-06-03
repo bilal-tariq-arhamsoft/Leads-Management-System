@@ -12,12 +12,14 @@ export default async function DashboardPage() {
       ? { assignedUserId: managerAssignedUserIdFilter(user.id) }
       : {};
 
-  const [totalLeads, newLeads] = await Promise.all([
+  const [totalLeads, secondaryCount] = await Promise.all([
     prisma.lead.count({ where: leadWhere }),
-    prisma.lead.count({
-      where: { ...leadWhere, status: "NEW" },
-    }),
+    isManager
+      ? prisma.lead.count({ where: { ...leadWhere, isActive: false } })
+      : prisma.leadForm.count(),
   ]);
+
+  const secondaryLabel = isManager ? "Inactive leads" : "Pending submissions";
 
   return (
     <div>
@@ -37,9 +39,9 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-neutral-600">New leads</p>
+          <p className="text-sm text-neutral-600">{secondaryLabel}</p>
           <p className="mt-1 text-3xl font-semibold text-neutral-900">
-            {newLeads.toLocaleString()}
+            {secondaryCount.toLocaleString()}
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { LeadSource, LeadStatus } from "@prisma/client";
+import { LeadSource } from "@prisma/client";
 
 export type CreateLeadFormInput = {
   firstName: string;
@@ -8,7 +8,6 @@ export type CreateLeadFormInput = {
   company?: string;
   position?: string;
   source: LeadSource;
-  status: LeadStatus;
   message?: string;
 };
 
@@ -21,7 +20,6 @@ export type CreateLeadFormFieldErrors = Partial<
     | "company"
     | "position"
     | "source"
-    | "status"
     | "message",
     string
   >
@@ -80,12 +78,6 @@ export function parseCreateLeadFormBody(
     : undefined;
   if (!source) errors.source = "Select a lead source";
 
-  const statusRaw = typeof raw.status === "string" ? raw.status.trim() : "";
-  const status = Object.values(LeadStatus).includes(statusRaw as LeadStatus)
-    ? (statusRaw as LeadStatus)
-    : undefined;
-  if (!status) errors.status = "Select a status";
-
   if (Object.keys(errors).length > 0) {
     return { errors };
   }
@@ -99,7 +91,6 @@ export function parseCreateLeadFormBody(
       company,
       position,
       source: source!,
-      status: status!,
       message,
     },
   };

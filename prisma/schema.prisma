@@ -15,7 +15,6 @@ model Lead {
   company        String?
   position       String?
   source         LeadSource?
-  status         LeadStatus  @default(NEW)
   message        String?
   assignedUserId String?     @unique
   isActive       Boolean     @default(true)
@@ -24,9 +23,7 @@ model Lead {
   assignedUser   User?       @relation(fields: [assignedUserId], references: [id])
 
   @@index([createdAt(sort: Desc)])
-  @@index([status])
   @@index([source])
-  @@index([status, createdAt(sort: Desc)])
 }
 
 model User {
@@ -68,23 +65,14 @@ model LeadForm {
   company   String?
   position  String?
   source    LeadSource
-  status    LeadStatus @default(NEW)
   message   String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
   @@index([createdAt(sort: Desc)])
   @@index([email])
-  @@index([status])
   @@index([source])
   @@map("lead_form")
-}
-
-enum LeadStatus {
-  NEW
-  CONTACTED
-  QUALIFIED
-  LOST
 }
 
 enum LeadSource {

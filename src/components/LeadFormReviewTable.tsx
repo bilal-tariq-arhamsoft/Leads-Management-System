@@ -13,7 +13,6 @@ export type LeadFormRow = {
   company: string | null;
   position: string | null;
   source: string;
-  status: string;
   message: string | null;
   createdAt: string;
 };
@@ -112,7 +111,7 @@ export default function LeadFormReviewTable({
     }
   }
 
-  const colSpan = 12;
+  const colSpan = 10;
 
   return (
     <div>
@@ -144,9 +143,6 @@ export default function LeadFormReviewTable({
               </th>
               <th className="px-2 py-2.5 text-left text-xs font-semibold uppercase text-neutral-100">
                 Source
-              </th>
-              <th className="px-2 py-2.5 text-left text-xs font-semibold uppercase text-neutral-100">
-                Status
               </th>
               <th className="px-2 py-2.5 text-left text-xs font-semibold uppercase text-neutral-100">
                 Submitted
@@ -194,7 +190,6 @@ export default function LeadFormReviewTable({
                       {row.company ?? "—"}
                     </td>
                     <td className="px-2 py-2 text-neutral-600">{row.source}</td>
-                    <td className="px-2 py-2 text-neutral-600">{row.status}</td>
                     <td className="px-2 py-2 text-neutral-600">
                       {new Date(row.createdAt).toLocaleString()}
                     </td>

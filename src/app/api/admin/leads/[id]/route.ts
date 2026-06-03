@@ -117,7 +117,6 @@ export async function PATCH(
     return Response.json({
       lead: {
         id: updatedLead.id,
-        status: updatedLead.status,
         isActive: updatedLead.isActive,
         assignedUser: updatedLead.assignedUser
           ? { id: updatedLead.assignedUser.id, name: updatedLead.assignedUser.name }

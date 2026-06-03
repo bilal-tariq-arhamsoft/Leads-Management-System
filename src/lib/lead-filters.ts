@@ -1,4 +1,4 @@
-import { LeadSource, LeadStatus, Prisma } from "@prisma/client";
+import { LeadSource, Prisma } from "@prisma/client";
 
 export const LEADS_PER_PAGE = 15;
 
@@ -12,7 +12,6 @@ export const leadListSelect = {
   company: true,
   position: true,
   source: true,
-  status: true,
   message: true,
   assignedUser: {
     select: { id: true, name: true },
@@ -65,7 +64,6 @@ function enumValuesMatchingSearch<T extends string>(
 export function buildLeadWhere(params: {
   search?: string;
   source?: LeadSource;
-  status?: LeadStatus;
   /** When set, only leads assigned to this manager user id. */
   assignedUserId?: string;
 }): Prisma.LeadWhereInput {
@@ -79,18 +77,10 @@ export function buildLeadWhere(params: {
     conditions.push({ source: params.source });
   }
 
-  if (params.status) {
-    conditions.push({ status: params.status });
-  }
-
   const term = params.search?.trim();
   if (term) {
     const matchedSources = enumValuesMatchingSearch(
       Object.values(LeadSource),
-      term,
-    );
-    const matchedStatuses = enumValuesMatchingSearch(
-      Object.values(LeadStatus),
       term,
     );
 
@@ -109,9 +99,6 @@ export function buildLeadWhere(params: {
         ...(matchedSources.length > 0
           ? [{ source: { in: matchedSources } }]
           : []),
-        ...(matchedStatuses.length > 0
-          ? [{ status: { in: matchedStatuses } }]
-          : []),
       ],
     });
   }
@@ -123,12 +110,5 @@ export function parseLeadSource(value: string | null): LeadSource | undefined {
   if (!value) return undefined;
   return Object.values(LeadSource).includes(value as LeadSource)
     ? (value as LeadSource)
-    : undefined;
-}
-
-export function parseLeadStatus(value: string | null): LeadStatus | undefined {
-  if (!value) return undefined;
-  return Object.values(LeadStatus).includes(value as LeadStatus)
-    ? (value as LeadStatus)
     : undefined;
 }

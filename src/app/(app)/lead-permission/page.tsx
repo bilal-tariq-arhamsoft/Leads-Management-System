@@ -23,7 +23,6 @@ export default async function LeadPermissionPage() {
       company: true,
       position: true,
       source: true,
-      status: true,
       message: true,
       createdAt: true,
     },

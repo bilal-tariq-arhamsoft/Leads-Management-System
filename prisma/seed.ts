@@ -1,4 +1,4 @@
-import { PrismaClient, LeadSource, LeadStatus } from "@prisma/client";
+import { PrismaClient, LeadSource } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { faker } from "@faker-js/faker";
 import { Pool } from "pg";
@@ -7,22 +7,10 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const STATUSES = Object.values(LeadStatus);
 const SOURCES = Object.values(LeadSource);
 const TOTAL_COUNT = 1_000_000;
 const BATCH_SIZE = 5_000;
 const POOL_SIZE = 200;
-
-function pickStatus(): LeadStatus {
-  const weights = [0.35, 0.3, 0.2, 0.15];
-  const r = Math.random();
-  let acc = 0;
-  for (let i = 0; i < STATUSES.length; i++) {
-    acc += weights[i];
-    if (r < acc) return STATUSES[i];
-  }
-  return LeadStatus.NEW;
-}
 
 function maybe<T>(value: T, probability = 0.7): T | null {
   return Math.random() < probability ? value : null;
@@ -73,7 +61,6 @@ function buildBatch(
       company,
       position: company ? maybe(pick(pools.positions, globalIndex + 11), 0.8) : null,
       source: maybe(pick(SOURCES, globalIndex + 5), 0.9),
-      status: pickStatus(),
       message: maybe(pick(pools.messages, globalIndex + 17), 0.4),
       isActive: Math.random() < 0.92,
       createdAt: randomPastDate(1),

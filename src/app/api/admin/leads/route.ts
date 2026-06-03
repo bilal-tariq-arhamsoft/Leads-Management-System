@@ -6,7 +6,6 @@ import {
   LEADS_PER_PAGE,
   leadListSelect,
   parseLeadSource,
-  parseLeadStatus,
   parsePage,
 } from "@/lib/lead-filters";
 import { managerAssignedUserIdFilter } from "@/lib/role-access";
@@ -22,14 +21,12 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("q") ?? searchParams.get("search") ?? "";
   const source = parseLeadSource(searchParams.get("source"));
-  const status = parseLeadStatus(searchParams.get("status"));
-
   const assignedUserId =
     user.position === UserPosition.MANAGER
       ? managerAssignedUserIdFilter(user.id)
       : undefined;
 
-  const where = buildLeadWhere({ search, source, status, assignedUserId });
+  const where = buildLeadWhere({ search, source, assignedUserId });
   const requestedPage = parsePage(searchParams.get("page"));
   const pageSize = LEADS_PER_PAGE;
   const skip = (requestedPage - 1) * pageSize;

@@ -1,11 +1,10 @@
 "use client";
 
-import { LeadSource, LeadStatus } from "@prisma/client";
+import { LeadSource } from "@prisma/client";
 import { useCallback, useState } from "react";
 import { formatEnumLabel } from "@/lib/lead-filters";
 
 const SOURCE_OPTIONS = Object.values(LeadSource);
-const STATUS_OPTIONS = Object.values(LeadStatus);
 
 const inputClassName =
   "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500";
@@ -21,7 +20,6 @@ type FormState = {
   company: string;
   position: string;
   source: LeadSource | "";
-  status: LeadStatus;
   message: string;
 };
 
@@ -33,7 +31,6 @@ const initialForm: FormState = {
   company: "",
   position: "",
   source: "",
-  status: LeadStatus.NEW,
   message: "",
 };
 
@@ -130,7 +127,6 @@ export default function LeadCaptureForm() {
           company: form.company.trim() || undefined,
           position: form.position.trim() || undefined,
           source: form.source,
-          status: form.status,
           message: form.message.trim() || undefined,
         }),
       });
@@ -385,24 +381,6 @@ export default function LeadCaptureForm() {
             {errors.source && (
               <p className="mt-1 text-xs text-red-600">{errors.source}</p>
             )}
-          </div>
-
-          <div>
-            <label htmlFor="status" className="mb-1 block text-sm font-medium text-neutral-700">
-              Status
-            </label>
-            <select
-              id="status"
-              value={form.status}
-              onChange={(e) => update("status", e.target.value as LeadStatus)}
-              className={selectClassName}
-            >
-              {STATUS_OPTIONS.map((value) => (
-                <option key={value} value={value}>
-                  {formatEnumLabel(value)}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div>

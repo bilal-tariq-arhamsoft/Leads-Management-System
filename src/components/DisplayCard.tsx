@@ -14,7 +14,6 @@ const columns = [
   { key: "company", label: "Company", width: "w-[7%]" },
   { key: "position", label: "Position", width: "w-[7%]" },
   { key: "source", label: "Source", width: "w-[6%]" },
-  { key: "status", label: "Status", width: "w-[6%]" },
   { key: "message", label: "Message", width: "w-[8%]" },
   { key: "assignedUser", label: "Assigned", width: "w-[7%]" },
   { key: "isActive", label: "Active", width: "w-[5%]" },
