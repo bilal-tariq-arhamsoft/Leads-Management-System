@@ -3,6 +3,7 @@ import { validateManagerAssignment } from "@/lib/assignees";
 import { requireAdminOnlyUser } from "@/lib/admin-session";
 import { HistoryAction, recordHistory } from "@/lib/history";
 import { leadHistoryInclude } from "@/lib/history-select";
+import { uniqueConstraintMessage } from "@/lib/prisma-errors";
 
 type ApproveBody = {
   assignedUserId?: string;
@@ -78,14 +79,14 @@ export async function POST(
 
     return Response.json({ ok: true });
   } catch (error) {
-    let message = "Failed to approve lead";
+    const uniqueMessage = uniqueConstraintMessage(error);
+    let message = uniqueMessage ?? "Failed to approve lead";
     if (
-      error instanceof Error &&
-      "code" in error &&
-      (error as { code: string }).code === "P2002" &&
-      (error as { meta?: { target?: string[] } }).meta?.target?.includes("email")
+      !uniqueMessage &&
+      process.env.NODE_ENV === "development" &&
+      error instanceof Error
     ) {
-      message = "A lead with this email already exists";
+      message = `${message}: ${error.message}`;
     }
     console.error("POST approve failed:", error);
     return Response.json({ error: message }, { status: 409 });

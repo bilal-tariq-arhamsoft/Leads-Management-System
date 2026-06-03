@@ -10,7 +10,7 @@ model Lead {
   id             String      @id @default(cuid())
   firstName      String
   lastName       String?
-  email          String      @unique
+  email          String
   phone          String?
   company        String?
   position       String?
@@ -24,6 +24,7 @@ model Lead {
 
   @@index([createdAt(sort: Desc)])
   @@index([source])
+  @@index([email])
   @@index([assignedUserId])
 }
 

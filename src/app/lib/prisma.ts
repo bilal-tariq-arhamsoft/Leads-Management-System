@@ -27,22 +27,34 @@ function hasRequiredDelegates(client: PrismaClient): boolean {
   );
 }
 
-/** Detect stale Prisma clients still using removed Lead.assignedTo. */
-function leadModelHasAssignedUserId(client: PrismaClient): boolean {
-  const runtime = (
+function getRuntimeModels(client: PrismaClient) {
+  return (
     client as unknown as {
       _runtimeDataModel?: {
         models?: Record<string, { fields?: { name: string }[] }>;
       };
     }
-  )._runtimeDataModel;
+  )._runtimeDataModel?.models;
+}
 
-  const leadFields = runtime?.models?.Lead?.fields ?? [];
+/** Detect stale Prisma clients still using removed Lead.assignedTo. */
+function leadModelHasAssignedUserId(client: PrismaClient): boolean {
+  const leadFields = getRuntimeModels(client)?.Lead?.fields ?? [];
   return leadFields.some((field) => field.name === "assignedUserId");
 }
 
+/** One manager must be assignable to many leads (User.assignedLeads[], not assignedLead?). */
+function userModelAllowsMultipleAssignedLeads(client: PrismaClient): boolean {
+  const userFields = getRuntimeModels(client)?.User?.fields ?? [];
+  return userFields.some((field) => field.name === "assignedLeads");
+}
+
 function isClientInSync(client: PrismaClient): boolean {
-  return hasRequiredDelegates(client) && leadModelHasAssignedUserId(client);
+  return (
+    hasRequiredDelegates(client) &&
+    leadModelHasAssignedUserId(client) &&
+    userModelAllowsMultipleAssignedLeads(client)
+  );
 }
 
 function createPrismaClient(): PrismaClient {
@@ -61,7 +73,7 @@ function getPrismaClient(): PrismaClient {
     const client = createPrismaClient();
     if (!isClientInSync(client)) {
       throw new Error(
-        'Prisma client is out of date (missing Lead.assignedUserId). Run "npx prisma generate" and restart the dev server.',
+        'Prisma client is out of date. Run "npx prisma generate" and restart the dev server.',
       );
     }
     globalForPrisma.prisma = client;
